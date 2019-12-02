@@ -3,6 +3,15 @@
 
 using namespace std;
 
+long calculateFuel(long value) {
+  long requiredFuel = (value / 3) - 2;
+  if (requiredFuel > 0) {
+    return requiredFuel + calculateFuel(requiredFuel);
+  } else {
+    return 0;
+  }
+}
+
 int main() {
   ifstream input{"input-1.txt"};
   unsigned long long total = 0;
@@ -13,8 +22,8 @@ int main() {
   std::string line;
   while (std::getline(input, line)) {
     long value = stol(line);
-    total += (value / 3) - 2;
+    total += calculateFuel(value);
   }
 
-  cout << to_string(total) << endl;
+  cout << total << endl;
 }
