@@ -8,19 +8,36 @@
 using namespace std;
 
 bool fulfillsCriteria(int value) {
-  int first = value / 100000 % 10;
-  int second = value / 10000 % 10;
-  int third = value / 1000 % 10;
-  int fourth = value / 100 % 10;
-  int fifth = value / 10 % 10;
-  int sixth = value % 10;
+  vector<int> values;
+  values.push_back(value / 100000 % 10);
+  values.push_back(value / 10000 % 10);
+  values.push_back(value / 1000 % 10);
+  values.push_back(value / 100 % 10);
+  values.push_back(value / 10 % 10);
+  values.push_back(value % 10);
 
-  return first <= second
-         && second <= third
-         && third <= fourth
-         && fourth <= fifth
-         && fifth <= sixth
-         && (first == second || second == third || third == fourth || fourth == fifth || fifth == sixth);
+  bool increasingDigits =
+    values[0] <= values[1] &&
+    values[1] <= values[2] &&
+    values[2] <= values[3] &&
+    values[3] <= values[4] &&
+    values[4] <= values[5];
+
+  bool adjectentDouble = false;
+  int currentDigit = values[0];
+  int countOnCurrent = 1;
+  for (int i = 1; i < values.size(); ++i) {
+    if (values[i] == currentDigit) {
+      countOnCurrent++;
+    } else {
+      adjectentDouble = adjectentDouble || countOnCurrent == 2;
+      currentDigit = values[i];
+      countOnCurrent = 1;
+    }
+  }
+  adjectentDouble = adjectentDouble || countOnCurrent == 2;
+
+  return increasingDigits && adjectentDouble;
 }
 
 int main() {
