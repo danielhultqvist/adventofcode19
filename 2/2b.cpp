@@ -41,7 +41,7 @@ int main() {
       int result = calculate(code, noun, verb);
       if (result == 19690720) {
         cout << "Matching candidate, noun: " << noun << ", verb: " << verb << endl;
-        cout << "Value to enter: " << ((100*noun)+verb) << endl;
+        cout << "Value to enter: " << ((100 * noun) + verb) << endl;
       }
     }
   }
