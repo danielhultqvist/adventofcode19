@@ -98,18 +98,22 @@ enum Direction {
   EAST = 4
 };
 
-void moveDroid(int &x, int &y, int &input) {
-  switch (input) {
+void moveDroid(int &x, int &y, Direction &currentDirection) {
+  switch (currentDirection) {
     case NORTH:
+      currentDirection = EAST;
       y--;
       break;
     case WEST:
+      currentDirection = NORTH;
       x--;
       break;
     case SOUTH:
+      currentDirection = WEST;
       y++;
       break;
     case EAST:
+      currentDirection = SOUTH;
       x++;
       break;
     default:
@@ -117,8 +121,8 @@ void moveDroid(int &x, int &y, int &input) {
   }
 }
 
-void placeAt(map<Position, Type> &map, const int &x, const int &y, const int &input, const Type type) {
-  switch (input) {
+void placeAt(map<Position, Type> &map, const int &x, const int &y, const Direction &currentDirection, const Type type) {
+  switch (currentDirection) {
     case NORTH:
       map[{x, (y - 1)}] = type;
       break;
@@ -150,19 +154,67 @@ int main() try {
   }
   auto program = HeapIntcodeProgram::loadProgram(code);
 
+  map<Position, Type> currentMap;
+  int currentX = 0;
+  int currentY = 0;
+  Direction currentDirection = EAST;
+  int stepsTaken = 0;
+
+  while (true) {
+    drawMap(currentMap, currentX, currentY, stepsTaken);
+
+    if (currentX == 0 && currentY == 0 && stepsTaken > 30) {
+      break;
+    }
+    stepsTaken++;
+
+    program.run({currentDirection});
+    int status = program.getOutputAndReset()[0];
+
+    switch (status) {
+      case 0:
+        placeAt(currentMap, currentX, currentY, currentDirection, Type::WALL);
+        switch (currentDirection) {
+          case NORTH: {
+            currentDirection = WEST;
+            break;
+          };
+          case SOUTH: {
+            currentDirection = EAST;
+            break;
+          }
+          case WEST: {
+            currentDirection = SOUTH;
+            break;
+          }
+          case EAST: {
+            currentDirection = NORTH;
+            break;
+          }
+          default:
+            throw runtime_error("lol");
+        }
+        break;
+      case 1:
+        placeAt(currentMap, currentX, currentY, currentDirection, Type::EMPTY);
+        moveDroid(currentX, currentY, currentDirection);
+        break;
+      case 2:
+        placeAt(currentMap, currentX, currentY, currentDirection, Type::OXYGEN_TANK);
+        moveDroid(currentX, currentY, currentDirection);
+        break;
+    }
+  }
+
+  // SWITCH TO MANUAL MODE
+  stepsTaken = 0;
+  currentX = 0;
+  currentY = 0;
 
   // Configure terminal to avoid using enter for commands
   system("stty raw");
 
   char keyPressed = 0;
-  cin >> keyPressed;
-
-  map<Position, Type> currentMap;
-  int currentX = 0;
-  int currentY = 0;
-  int input;
-  int stepsTaken = 0;
-
   while (true) {
     drawMap(currentMap, currentX, currentY, stepsTaken);
     cin >> keyPressed;
@@ -174,42 +226,42 @@ int main() try {
 
     switch (keyPressed) {
       case 'w':
-        input = NORTH;
+        currentDirection = NORTH;
         break;
       case 'a':
-        input = WEST;
+        currentDirection = WEST;
         break;
       case 's':
-        input = SOUTH;
+        currentDirection = SOUTH;
         break;
       case 'd':
-        input = EAST;
+        currentDirection = EAST;
         break;
       case 'r':
         stepsTaken = 0;
         continue;
-        break;
       default:
         cout << "Unsupported key: " << keyPressed << endl;
         continue;
     }
-    stepsTaken++;
 
-    program.run({input});
+    program.run({currentDirection});
 
     int status = program.getOutputAndReset()[0];
 
     switch (status) {
       case 0:
-        placeAt(currentMap, currentX, currentY, input, Type::WALL);
+        placeAt(currentMap, currentX, currentY, currentDirection, Type::WALL);
         break;
       case 1:
-        placeAt(currentMap, currentX, currentY, input, Type::EMPTY);
-        moveDroid(currentX, currentY, input);
+        placeAt(currentMap, currentX, currentY, currentDirection, Type::EMPTY);
+        moveDroid(currentX, currentY, currentDirection);
+        stepsTaken++;
         break;
       case 2:
-        placeAt(currentMap, currentX, currentY, input, Type::OXYGEN_TANK);
-        moveDroid(currentX, currentY, input);
+        placeAt(currentMap, currentX, currentY, currentDirection, Type::OXYGEN_TANK);
+        moveDroid(currentX, currentY, currentDirection);
+        stepsTaken++;
         break;
     }
   }
