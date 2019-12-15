@@ -11,35 +11,11 @@
 #include <set>
 #include <map>
 #include <iomanip>
+#include <numeric>
 
 using namespace std;
 using namespace std::chrono;
 
-struct Velocity {
-  int x, y, z;
-};
-
-struct Position {
-  int x, y, z;
-};
-
-struct Moon {
-  Velocity velocity;
-  Position position;
-};
-
-void printMoons(const vector<Moon> &moons) {
-  for (auto &moon : moons) {
-    cout << "pos=<x=" << setw(3) << moon.position.x << ",";
-    cout << "y=" << setw(3) << moon.position.y << ",";
-    cout << "z=" << setw(3) << moon.position.z << ">, ";
-
-    cout << "vel=<x=" << setw(3) << moon.velocity.x << ",";
-    cout << "y=" << setw(3) << moon.velocity.y << ",";
-    cout << "z=" << setw(3) << moon.velocity.z << ">";
-    cout << endl;
-  }
-}
 
 int calculateVelocityChange(int leftPosition, int rightPosition) {
   if (leftPosition == rightPosition) {
@@ -51,64 +27,65 @@ int calculateVelocityChange(int leftPosition, int rightPosition) {
   }
 }
 
-int main() {
-  steady_clock::time_point begin = steady_clock::now();
+string toString(const vector<int>& velocities, const vector<int>& positions) {
+  stringstream ss;
+  for (int velocity : velocities) {
+    ss << to_string(velocity) + "-";
+  }
+  for (int position : positions) {
+    ss << to_string(position) + "-";
+  }
+  return ss.str();
+}
 
-  vector<Moon> initialState = {
-    {{0, 0, 0}, {14, 2,  8}},
-    {{0, 0, 0}, {7,  4,  10}},
-    {{0, 0, 0}, {1,  17, 16}},
-    {{0, 0, 0}, {-4, -1, 1}}
-  };
+long long findPeriod(vector<int> velocities, vector<int> positions) {
+  set<string> previousPositions;
+  string position = toString(velocities, positions);
+  int iterations = 0;
 
-  vector<Moon> moons = initialState;
+  while(previousPositions.count(position) == 0) {
+    previousPositions.insert(position);
 
-  const long long NUM_STEPS = 14686774924;
-
-  cout << "After 0 steps: " << endl;
-  printMoons(moons);
-  cout << endl;
-
-  for (long long step = 0; step < NUM_STEPS; ++step) {
-    // Update velocity
-    for (int i = 0; i < moons.size(); ++i) {
-      for (int j = 0; j < moons.size(); ++j) {
+    for (int i = 0; i < positions.size(); ++i) {
+      for (int j = 0; j < positions.size(); ++j) {
         if (i != j) {
-          moons[i].velocity.x += calculateVelocityChange(moons[i].position.x, moons[j].position.x);
+          velocities[i] += calculateVelocityChange(positions[i], positions[j]);
         }
       }
     }
 
-    // Update position
-    for (auto &moon : moons) {
-      moon.position.x += moon.velocity.x;
+    for (int i = 0; i < positions.size(); ++i) {
+      positions[i] += velocities[i];
     }
 
-    bool backToStart = true;
-    for (int i = 0; i < moons.size(); ++i) {
-      backToStart = backToStart
-                    && moons[i].position.x == initialState[i].position.x
-                    && moons[i].velocity.x == initialState[i].velocity.x;
-    }
-    if (backToStart) {
-      cout << "Steps required: " + to_string((step + 1)) << endl;
-      break;
-    }
+    position = toString(velocities, positions);
+
+    iterations++;
   }
 
-  // x 268296
-  // y 231614
-  // z 108344
-  
-  int totalEnergy = 0;
-  for (auto &moon : moons) {
-    int potentialEnergy = abs(moon.position.x) + abs(moon.position.y) + abs(moon.position.z);
-    int kineticEnergy = abs(moon.velocity.x) + abs(moon.velocity.y) + abs(moon.velocity.z);
-    totalEnergy += potentialEnergy * kineticEnergy;
-  }
+  return iterations;
+}
 
-  // 6732500091353405
+int main() {
+  steady_clock::time_point begin = steady_clock::now();
+  vector<int> xpositions = {14, 7, 1, -4};
+  vector<int> ypositions = {2, 4, 17, -1};
+  vector<int> zpositions = {8, 10, 16, 1};
+  vector<int> initialVelocity = {0, 0, 0, 0};
 
-  cout << "Total energy: " << totalEnergy << endl;
+  long long periodX = findPeriod(initialVelocity, xpositions);
+  long long periodY = findPeriod(initialVelocity, ypositions);
+  long long periodZ = findPeriod(initialVelocity, zpositions);
+
+  long long xyGCD = gcd(periodX, periodY);
+  long long xyLCM = (periodX*periodY)/xyGCD;
+
+  long long xyzGCD = gcd(xyLCM, periodZ);
+  long long xyzLCM = (xyLCM*periodZ)/xyzGCD;
+
+  steady_clock::time_point end = steady_clock::now();
+  cout << "It takes " << xyzLCM << " steps to get back to a previous state" << endl;
+  cout << "Time difference = " << chrono::duration_cast<chrono::milliseconds>(end - begin).count() << " ms" << endl;
+
   return 0;
-}420788524631496
+}
